@@ -1,0 +1,16 @@
+body {
+    font-family: "Helvetica Neue", Helvetica; 
+    font-size: 14px;
+    overflow: hidden; 
+}
+
+.header {
+    margin: 20px auto auto 20px;
+    font-size: 24px; 
+    font-weight: 300; 
+}
+
+.subtitle {
+    color: #888; 
+    font-size: 12px;
+}

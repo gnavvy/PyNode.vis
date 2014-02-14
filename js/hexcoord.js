@@ -95,15 +95,20 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
             .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
             .attr("stroke", function(d,i) { return "#AAA"; })
             .attr("stroke-width", "0.5px")
-            .style("fill", function(d,i) { return "#EEE"; })
-            .style("fill-opacity", function(d,i) {
+            .style("fill", function(d,i) {
                 var x = i % gridDim.x;
                 var y = (i-x) / gridDim.x;
                 var opacity = data[y][x];
-                return opacity;
+                var hex = Number(parseInt(255 - 255 * opacity, 10)).toString(16);
+                return "#" + hex + hex + hex;
             });
         return this;
     },
+    float2color: function(val) {
+        var dec = 255 * val;
+        var hex = Number(parseInt(dec, 10)).toString(16);
+        return "#" + hex + hex + hex;
+    }
 });
 
 App.Views.DataLayer = App.Views.CoordinateLayer.extend({});

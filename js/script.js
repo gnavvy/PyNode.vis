@@ -1,19 +1,15 @@
 $(function() {
     var options = {
         parent: '#vis',
-        chart: {
-            'canvas': {
-                'width': 800,
-                'height': 800
-            }
-        }
+        filePath: 'data/data.json',
     }
-    
-    var hexmap = new App.Models.HexMap();
-    hexmap.set(options.chart);
 
-    var view = new App.Views.InteractionLayer({
-        el: options.parent,
-        model: hexmap
-    }).render();
+    d3.json(options.filePath, function(data) {
+        var viewModel = new App.ViewModels.HexMapViewModel();
+        var view = new App.Views.InteractionLayer({
+            el: options.parent,
+            model: viewModel,
+            collection: data
+        }).render();
+    });
 });

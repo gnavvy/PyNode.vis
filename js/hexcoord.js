@@ -1,15 +1,20 @@
 var App = {
     Models: {},
     Collections: {},
+    ViewModels: {},
     Views: {}
 };
 
 // ------ MODEL ------ //
-App.Models.HexMap = Backbone.Model.extend({
+
+// ------ COLLECTION ------ //
+
+// ------ VIEW MODEL ------ //
+App.ViewModels.HexMapViewModel = Backbone.Model.extend({
     defaults: {
-         margin: { 'top': 30, 'right': 30, 'bottom': 30, 'left': 30 },
-         canvas: { 'width': 800, 'height': 800 },
-         gridDim: { 'x': 50, 'y': 50 }
+        margin: { 'top': 30, 'right': 30, 'bottom': 30, 'left': 30 },
+        canvas: { 'width': 800, 'height': 800 },
+        gridDim: { 'x': 50, 'y': 50 }
     },
     set: function(key, val, options) {
         if (!key) return this;   
@@ -28,8 +33,6 @@ App.Models.HexMap = Backbone.Model.extend({
     url: ''
 });
 
-// ------ COLLECTION ------ //
-
 // ------ VIEW ------ //
 App.Views.CanvasLayer = Backbone.View.extend({
     initialize: function(options) {},
@@ -47,7 +50,7 @@ App.Views.CanvasLayer = Backbone.View.extend({
         this.layer.container = d3.select(this.el).append('svg:svg')
             .attr('width', canvas.width)
             .attr('height', canvas.height);
-        this.layer.chart = this.layer.container.append('svg:g')
+        this.layer.figure = this.layer.container.append('svg:g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
     },
     figureSize: function() {
@@ -81,28 +84,40 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
             for (var x = 0; x < gridDim.x; ++x) {
                 centroids.push([hexRadius*x*1.749, hexRadius*y*1.5]);
             }
-        }
+        }      
 
-        this.layer.grid = this.layer.chart.append("svg:g").selectAll('.hexagon')
+        var data = this.model.get('_data_series');
+        this.layer.coordinate = this.layer.figure.append("svg:g")
+            .selectAll('.hexagon')
             .data(hexbin(centroids))
             .enter().append("path")
             .attr("class", "hexagon")
-            .attr("d", function (d) {
-                return "M" + d.x + "," + d.y + hexbin.hexagon();
-            })
-            .attr("stroke", function (d,i) {
-                return "#aaa";
-            })
+            .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
+            .attr("stroke", function(d,i) { return "#AAA"; })
             .attr("stroke-width", "0.5px")
-            .style("fill", function (d,i) {
-                return "#eee";
+            .style("fill", function(d,i) { return "#EEE"; })
+            .style("fill-opacity", function(d,i) {
+                var x = i % gridDim.x;
+                var y = (i-x) / gridDim.x;
+                var opacity = data[y][x];
+                return opacity;
             });
         return this;
-    }
+    },
 });
 
-App.Views.InteractionLayer = App.Views.CoordinateLayer.extend({
-    initialize: function(options) {},
+App.Views.DataLayer = App.Views.CoordinateLayer.extend({});
+App.Views.AnnotationLayer = App.Views.DataLayer.extend({});
+App.Views.ListenerLayer = App.Views.AnnotationLayer.extend({});
+
+App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
+    options: {  // use options instead of defaults for View
+                // ref: http://stackoverflow.com/a/17202740
+    },
+    initialize: function(options) {
+        this.options = _.defaults(options || {}, this.options);
+        this.model.set('_data_series', this.collection);
+    },
     render: function() {
         this.initCanvas();
         this.initCoordinate();
@@ -112,15 +127,15 @@ App.Views.InteractionLayer = App.Views.CoordinateLayer.extend({
     bindInteraction: function() {
         var mouseover = function() {
             d3.select(this).transition().duration(10)
-                .style("fill", function (d,i) { return "#0e0"; })
-                .style("fill-opacity", 0.3);
+                .style("fill", function (d,i) { return "#0E0"; })
+                .style("fill-opacity", 0.5);
         };
         var mouseout = function() {
             d3.select(this).transition().duration(500)
-                .style("fill", function (d,i) { return "#eee"; })
+                .style("fill", function (d,i) { return "#EEE"; })
                 .style("fill-opacity", 1.0);
         }
-        this.layer.grid
+        this.layer.coordinate
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
         return this;

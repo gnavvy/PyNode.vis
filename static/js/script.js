@@ -1,7 +1,7 @@
 $(function() {
     var options = {
         parent: '#vis',
-        filePath: 'data/data.json',
+        filePath: 'static/data/data.json'
     }
 
     d3.json(options.filePath, function(data) {
@@ -10,6 +10,7 @@ $(function() {
             el: options.parent,
             model: viewModel,
             collection: data
-        }).render();
+        });
+        view.render();
     });
 });

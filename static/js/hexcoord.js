@@ -27,7 +27,7 @@ App.ViewModels.HexMapViewModel = Backbone.Model.extend({
             attrs = {};
             attrs[key] = val;
         }
-
+        // globally
         Backbone.Model.prototype.set.call(this, attrs, options);
     },
     url: ''

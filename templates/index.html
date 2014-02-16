@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <title>Hexagonal Coordinate</title>
-        <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="{{url_for('static', filename='css/style.css')}}"/>
     </head>
 
     <body>
@@ -23,7 +23,7 @@
         <script type="text/javascript" src="http://d3js.org/d3.hexbin.v0.min.js"></script>
 
         <!-- Scripts -->
-        <script type="text/javascript" src="js/hexcoord.js"></script>
-        <script type="text/javascript" src="js/script.js"></script>
+        <script src="{{url_for('static', filename='js/hexcoord.js')}}"></script>
+        <script src="{{url_for('static', filename='js/script.js')}}"></script>
     </body>
 </html>

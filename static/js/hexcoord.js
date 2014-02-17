@@ -17,7 +17,6 @@ App.Collections.DataSeries = Backbone.Collection.extend({
     }
 });
 
-
 // ------ VIEW MODEL ------ //
 App.ViewModels.HexMapViewModel = Backbone.Model.extend({
     defaults: {
@@ -26,7 +25,9 @@ App.ViewModels.HexMapViewModel = Backbone.Model.extend({
         gridDim: { 'x': 50, 'y': 50 }
     },
     set: function(key, val, options) {
-        if (!key) return this;   
+        if (!key) {
+            return this;
+        }
 
         var attrs;
         if (typeof key === 'object') {  // set multiple attributes
@@ -38,6 +39,7 @@ App.ViewModels.HexMapViewModel = Backbone.Model.extend({
         }
         // globally
         Backbone.Model.prototype.set.call(this, attrs, options);
+        return this;
     },
     url: ''
 });
@@ -45,6 +47,10 @@ App.ViewModels.HexMapViewModel = Backbone.Model.extend({
 // ------ VIEW ------ //
 App.Views.CanvasLayer = Backbone.View.extend({
     initCanvas: function() {
+        if (_(this).has('layer') && _(this.layer).has('figure')) {
+            return this;
+        }
+
         var canvas = this.model.get('canvas');
         var margin = this.model.get('margin');
 
@@ -156,7 +162,7 @@ App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
 
 App.Views.HexMapView = App.Views.InteractionLayer.extend({
     initialize: function() {
-        _.bindAll(this, 'render');
+        _(this).bindAll('render');
         this.collection.bind('reset', this.render);
         this.collection.fetch({reset: true});
     },

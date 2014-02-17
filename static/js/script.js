@@ -1,16 +1,15 @@
 $(function() {
-    var options = {
-        parent: '#vis',
-        filePath: 'static/data/data.json'
-    };
+    var viewModel = new App.ViewModels.HexMapViewModel();
+    var dataSeries = new App.Collections.DataSeries();
+    new App.Views.InteractionLayer({
+        el: '#vis',
+        model: viewModel,
+        collection: dataSeries
+    }).render();
 
-    d3.json(options.filePath, function(data) {
-        var viewModel = new App.ViewModels.HexMapViewModel();
-        var view = new App.Views.InteractionLayer({
-            el: options.parent,
-            model: viewModel,
-            collection: data
+    setInterval(function() {
+        dataSeries.fetch({
+            reset: true
         });
-        view.render();
-    });
+    }, 5000);
 });

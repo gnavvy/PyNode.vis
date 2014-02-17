@@ -6,8 +6,17 @@ var App = {
 };
 
 // ------ MODEL ------ //
+App.Models.DataItem = Backbone.Model.extend({});
 
 // ------ COLLECTION ------ //
+App.Collections.DataSeries = Backbone.Collection.extend({
+    model: App.Models.DataItem,
+    url: '/getData',
+    parse: function(response) {
+        return response.values;
+    }
+});
+
 
 // ------ VIEW MODEL ------ //
 App.ViewModels.HexMapViewModel = Backbone.Model.extend({
@@ -65,7 +74,7 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     initData: function() {
         this.hexagon();  // create a hexagon generator
         this.data = {};
-        this.data.values = this.collection;
+        this.data.values = this.collection.toJSON();
         this.data.centroids = this.getCentroids();
         return this;
     },
@@ -114,7 +123,7 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         var gridDim = this.model.get('gridDim');
         var x = idx % gridDim.x;
         var y = (idx-x) / gridDim.x;
-        return this.data.values[y][x];
+        return this.data.values.length > 0 ? this.data.values[y][x] : 1.0;
     },
     getColor: function(idx) {
         var opacity = 255 * (1 - this.getValue(idx));
@@ -127,11 +136,10 @@ App.Views.AnnotationLayer = App.Views.DataLayer.extend({});
 App.Views.ListenerLayer = App.Views.AnnotationLayer.extend({});
 
 App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
-    options: {  // use options instead of defaults for View
-                // ref: http://stackoverflow.com/a/17202740
-    },
-    initialize: function(options) {
-        this.options = _.defaults(options || {}, this.options);
+    initialize: function() {
+        _.bindAll(this, 'render');
+        this.collection.bind('reset', this.render);
+        this.collection.fetch({reset: true});
     },
     render: function() {
         return this.initCanvas().initData().draw().bindInteraction();

@@ -136,14 +136,6 @@ App.Views.AnnotationLayer = App.Views.DataLayer.extend({});
 App.Views.ListenerLayer = App.Views.AnnotationLayer.extend({});
 
 App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
-    initialize: function() {
-        _.bindAll(this, 'render');
-        this.collection.bind('reset', this.render);
-        this.collection.fetch({reset: true});
-    },
-    render: function() {
-        return this.initCanvas().initData().draw().bindInteraction();
-    },
     bindInteraction: function() {
         var mouseover = function() {
             d3.select(this).transition().duration(10)
@@ -159,5 +151,16 @@ App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
         return this;
+    }
+});
+
+App.Views.HexMapView = App.Views.InteractionLayer.extend({
+    initialize: function() {
+        _.bindAll(this, 'render');
+        this.collection.bind('reset', this.render);
+        this.collection.fetch({reset: true});
+    },
+    render: function() {
+        return this.initCanvas().initData().draw().bindInteraction();
     }
 });

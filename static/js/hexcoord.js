@@ -72,14 +72,14 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     draw: function() {
         var hexbin = this.model.get('_hexagon');
 
-        self = this;
+        var self = this;
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
             .data(hexbin(this.data.centroids))
             .enter().append("path")
             .attr("class", "hexagon")
             .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
-            .attr("stroke", function(d,i) { return "#AAA"; })
-            .attr("stroke-width", "0.5px")
+            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
+            .attr("stroke-width", "0.2px")
             .style("fill", function(d,i) { return self.getColor(i); });
         return this;
     },
@@ -89,9 +89,9 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     },
     hexagon: function() {
         var gridDim = this.model.get('gridDim');
-        var figureAear = this.model.get('_figure');
-        var xRadius = figureAear.width / ((gridDim.x+0.5) * Math.sqrt(3));
-        var yRadius = figureAear.height / ((gridDim.y+1/3) * 1.5);
+        var figureArea = this.model.get('_figure');
+        var xRadius = figureArea.width / ((gridDim.x+0.5) * Math.sqrt(3));
+        var yRadius = figureArea.height / ((gridDim.y+1/3) * 1.5);
         var radius = d3.min([xRadius, yRadius]);
         var hexagon = d3.hexbin().radius(radius);
         this.model.set('_hexRadius', radius);
@@ -110,11 +110,14 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         }
         return centroids;
     },
-    getColor: function(idx) {
+    getValue: function(idx) {
         var gridDim = this.model.get('gridDim');
         var x = idx % gridDim.x;
         var y = (idx-x) / gridDim.x;
-        var opacity = 255 - 255 * this.data.values[y][x];
+        return this.data.values[y][x];
+    },
+    getColor: function(idx) {
+        var opacity = 255 * (1 - this.getValue(idx));
         var hex = Number(parseInt(opacity, 10)).toString(16);
         return "#" + hex + hex + hex;
     }
@@ -136,17 +139,17 @@ App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
     bindInteraction: function() {
         var mouseover = function() {
             d3.select(this).transition().duration(10)
-                .style("fill", function (d,i) { return "#0E0"; })
+                .style("fill", function() { return "#0E0"; })
                 .style("fill-opacity", 0.5);
         };
         var mouseout = function() {
             d3.select(this).transition().duration(500)
-                .style("fill", function (d,i) { return "#EEE"; })
+                .style("fill", function() { return "#EEE"; })
                 .style("fill-opacity", 1.0);
-        }
+        };
         this.layer.hexagons
             .on("mouseover", mouseover)
             .on("mouseout", mouseout);
         return this;
-    },
+    }
 });

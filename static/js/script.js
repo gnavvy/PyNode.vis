@@ -2,7 +2,7 @@ $(function() {
     var options = {
         parent: '#vis',
         filePath: 'static/data/data.json'
-    }
+    };
 
     d3.json(options.filePath, function(data) {
         var viewModel = new App.ViewModels.HexMapViewModel();

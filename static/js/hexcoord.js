@@ -149,9 +149,15 @@ App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
                 .style("fill", function() { return "#EEE"; })
                 .style("fill-opacity", 1.0);
         };
+        var click = function() {
+            d3.select(this).transition().duration(10)
+                .style("fill", function() { return "#F00"; })
+                .style("fill-opacity", 0.5);
+        };
         this.layer.hexagons
             .on("mouseover", mouseover)
-            .on("mouseout", mouseout);
+            .on("mouseout", mouseout)
+            .on("click", click);
         return this;
     }
 });
@@ -161,6 +167,10 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         _(this).bindAll('render');
         this.collection.bind('reset', this.render);
         this.collection.fetch({reset: true});
+
+        var color = d3.scale.linear().domain([0.0, 1.0, 10])
+            .range(['green', 'orange', 'red']);
+        this.model.set('colorScheme', color);
     },
     render: function() {
         return this.initCanvas().updateData().drawData().bindInteraction();

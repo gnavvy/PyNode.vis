@@ -61,8 +61,8 @@ App.Views.CanvasLayer = Backbone.View.extend({
 
         this.layer = {};
         this.layer.container = d3.select(this.el).append('svg:svg')
-            .attr('width', canvas.width)
-            .attr('height', canvas.height);
+            .style('width', canvas.width)
+            .style('height', canvas.height);
         this.layer.figure = this.layer.container.append('svg:g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         return this;
@@ -77,11 +77,11 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
             .data(hexbin(centroids))
             .enter().append("path")
-            .attr("class", "hexagon")
             .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
-            .attr("stroke-width", "0.2px")
-            .attr("stroke", "#AAA")
-            .attr("fill", "FFF");
+            .style("class", "hexagon")
+            .style("stroke-width", "0.2px")
+            .style("stroke", "#AAA")
+            .style("fill", "#FFF");
         return this;
     },
     createHexagonSkeleton: function() {
@@ -118,8 +118,8 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         }
         var self = this;
         this.layer.hexagons
-            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
-            .attr("fill", function(d,i) { return self.getColor(i); });
+            .style("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
+            .style("fill", function(d,i) { return self.getColor(i); });
         return this;
     },
     getValue: function(idx) {

@@ -129,9 +129,12 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         return this.data.length > 0 ? this.data[y][x] : 0.0;
     },
     getColor: function(idx) {
-        var opacity = 255 * (1 - this.getValue(idx));
-        var hex = Number(parseInt(opacity, 10)).toString(16);
-        return "#" + hex + hex + hex;
+        var value = this.getValue(idx);
+        return this.model.get('colorScheme')(value);
+//        var opacity = 255 * (1.0 - this.getValue(idx));
+//        var hex = Number(parseInt(opacity, 10)).toString(16);
+//        hex = hex.length === 1 ? "0" + hex : hex;
+//        return "#" + "DD" + "DD" + hex;
     }
 });
 

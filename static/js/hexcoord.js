@@ -54,7 +54,10 @@ App.Views.CanvasLayer = Backbone.View.extend({
         var canvas = this.model.get('canvas');
         var margin = this.model.get('margin');
 
-        this.model.set('_figure', this.figureSize());
+        this.model.set('_figure', {
+            width: canvas.width - margin.left - margin.right,
+            height: canvas.height - margin.top - margin.bottom
+        });
 
         this.layer = {};
         this.layer.container = d3.select(this.el).append('svg:svg')
@@ -63,14 +66,6 @@ App.Views.CanvasLayer = Backbone.View.extend({
         this.layer.figure = this.layer.container.append('svg:g')
             .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
         return this;
-    },
-    figureSize: function() {
-        var canvas = this.model.get('canvas'),
-            margin = this.model.get('margin');
-        return {
-            width: canvas.width - margin.left - margin.right,
-            height: canvas.height - margin.top - margin.bottom
-        }
     }
 });
 
@@ -96,8 +91,7 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
         var yRadius = figureArea.height / ((gridDim.y+1/3) * 1.5);
         var radius = d3.min([xRadius, yRadius]);
         var hexagon = d3.hexbin().radius(radius);
-        this.model.set('_hexRadius', radius);
-        this.model.set('_hexagon', hexagon);
+        this.model.set({ '_hexRadius': radius, '_hexagon': hexagon});
     },
     calculateCentroids: function() {
         var radius = this.model.get('_hexRadius');
@@ -142,9 +136,8 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
 });
 
 App.Views.AnnotationLayer = App.Views.DataLayer.extend({});
-App.Views.ListenerLayer = App.Views.AnnotationLayer.extend({});
 
-App.Views.InteractionLayer = App.Views.ListenerLayer.extend({
+App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
     bindInteraction: function() {
         var mouseover = function() {
             d3.select(this).transition().duration(10)

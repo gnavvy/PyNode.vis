@@ -75,16 +75,12 @@ App.Views.CanvasLayer = Backbone.View.extend({
 });
 
 App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
-    initCoordinate: function() {  // create hexmap cells, called after initData()
+    initCoordinate: function() {
+        this.createHexagonSkeleton();
         var hexbin = this.model.get('_hexagon');
-
-        if (!hexbin || !_(this).has('data') || !_(this.data).has('centroids')) {
-            console.log("ERROR - initCoordinate() called before initData().")
-            this.initData();
-        }
-
+        var centroids = this.calculateCentroids();
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
-            .data(hexbin(this.data.centroids))
+            .data(hexbin(centroids))
             .enter().append("path")
             .attr("class", "hexagon")
             .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
@@ -92,34 +88,8 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
             .attr("stroke", "#AAA")
             .attr("fill", "FFF");
         return this;
-    }
-});
-
-App.Views.DataLayer = App.Views.CoordinateLayer.extend({
-    initData: function() {
-        this.hexagon();  // create a hexagon generator
-        this.data = {};
-        this.data.centroids = this.getCentroids();
-        return this;
     },
-    updateData: function() {
-        if (!_(this).has('data') || !_(this.data).has('centroids')) {
-            this.initData();
-        }
-        this.data.values = this.collection.toJSON();
-        return this;
-    },
-    drawData: function() {  // update
-        if (!_(this).has('layer') || !_(this.layer).has('hexagons')) {
-            this.initCoordinate();
-        }
-        var self = this;
-        this.layer.figure.selectAll('.hexagon')
-            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
-            .style("fill", function(d,i) { return self.getColor(i); });
-        return this;
-    },
-    hexagon: function() {
+    createHexagonSkeleton: function() {
         var gridDim = this.model.get('gridDim');
         var figureArea = this.model.get('_figure');
         var xRadius = figureArea.width / ((gridDim.x+0.5) * Math.sqrt(3));
@@ -128,25 +98,41 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         var hexagon = d3.hexbin().radius(radius);
         this.model.set('_hexRadius', radius);
         this.model.set('_hexagon', hexagon);
-        return this;
     },
-    getCentroids: function() {
+    calculateCentroids: function() {
         var radius = this.model.get('_hexRadius');
         var gridDim = this.model.get('gridDim');
-
         var centroids = [];  // faster than _.range().map().zip()
-        for (var y = 0; y < gridDim.y; ++y) {  
+        for (var y = 0; y < gridDim.y; ++y) {
             for (var x = 0; x < gridDim.x; ++x) {
                 centroids.push([radius * x * 1.749, radius * y * 1.5]);
             }
         }
         return centroids;
+    }
+});
+
+App.Views.DataLayer = App.Views.CoordinateLayer.extend({
+    updateData: function() {
+        this.data = this.collection.toJSON();
+        return this;
+    },
+    drawData: function() {  // update
+        // first check if hexmap coordinate is created
+        if (!_(this).has('layer') || !_(this.layer).has('hexagons')) {
+            this.initCoordinate();
+        }
+        var self = this;
+        this.layer.hexagons
+            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
+            .attr("fill", function(d,i) { return self.getColor(i); });
+        return this;
     },
     getValue: function(idx) {
         var gridDim = this.model.get('gridDim');
         var x = idx % gridDim.x;
         var y = (idx-x) / gridDim.x;
-        return this.data.values.length > 0 ? this.data.values[y][x] : 0.0;
+        return this.data.length > 0 ? this.data[y][x] : 0.0;
     },
     getColor: function(idx) {
         var opacity = 255 * (1 - this.getValue(idx));

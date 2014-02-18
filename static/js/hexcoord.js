@@ -80,26 +80,39 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     initData: function() {
         this.hexagon();  // create a hexagon generator
         this.data = {};
-        this.data.values = this.collection.toJSON();
         this.data.centroids = this.getCentroids();
+        return this;
+    },
+    updateData: function() {
+        if (!_(this).has('data') ||
+            !_(this.data).has('centroids') ||
+            !this.data.centroids.length > 0) {
+            this.initData();
+        }
+        this.data.values = this.collection.toJSON();
         return this;
     },
     draw: function() {
         var hexbin = this.model.get('_hexagon');
 
-        var self = this;
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
             .data(hexbin(this.data.centroids))
             .enter().append("path")
             .attr("class", "hexagon")
             .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
-            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
             .attr("stroke-width", "0.2px")
-            .style("fill", function(d,i) { return self.getColor(i); });
+            .attr("stroke", "#AAA")
+            .style("fill", "FFF");
         return this;
     },
-    update: function() {
-        console.log('update!');
+    redraw: function() {  // update
+        if (!_(this).has('layer') || !_(this.layer).has('hexagons')) {
+            this.draw();
+        }
+        var self = this;
+        this.layer.figure.selectAll('.hexagon')
+            .attr("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
+            .style("fill", function(d,i) { return self.getColor(i); });
         return this;
     },
     hexagon: function() {
@@ -129,7 +142,7 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         var gridDim = this.model.get('gridDim');
         var x = idx % gridDim.x;
         var y = (idx-x) / gridDim.x;
-        return this.data.values.length > 0 ? this.data.values[y][x] : 1.0;
+        return this.data.values.length > 0 ? this.data.values[y][x] : 0.0;
     },
     getColor: function(idx) {
         var opacity = 255 * (1 - this.getValue(idx));
@@ -167,6 +180,6 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         this.collection.fetch({reset: true});
     },
     render: function() {
-        return this.initCanvas().initData().draw().bindInteraction();
+        return this.initCanvas().updateData().redraw().bindInteraction();
     }
 });

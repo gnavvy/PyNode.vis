@@ -131,10 +131,6 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     getColor: function(idx) {
         var value = this.getValue(idx);
         return this.model.get('colorScheme')(value);
-//        var opacity = 255 * (1.0 - this.getValue(idx));
-//        var hex = Number(parseInt(opacity, 10)).toString(16);
-//        hex = hex.length === 1 ? "0" + hex : hex;
-//        return "#" + "DD" + "DD" + hex;
     }
 });
 
@@ -171,8 +167,8 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         this.collection.bind('reset', this.render);
         this.collection.fetch({reset: true});
 
-        var color = d3.scale.linear().domain([0.0, 1.0, 10])
-            .range(['green', 'orange', 'red']);
+        var color = d3.scale.linear().domain([0.0, 1.0, 100])
+            .range(['white', 'orange']);
         this.model.set('colorScheme', color);
     },
     render: function() {

@@ -168,7 +168,7 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         this.collection.fetch({reset: true});
 
         var color = d3.scale.linear().domain([0.0, 1.0, 100])
-            .range(['white', 'orange']);
+            .range(['orange', 'white']);
         this.model.set('colorScheme', color);
     },
     render: function() {

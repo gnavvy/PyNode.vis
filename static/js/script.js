@@ -12,5 +12,5 @@ $(function() {
         dataSeries.fetch({
             reset: true
         });
-    }, 500);
+    }, 5000);
 });

@@ -1,7 +1,6 @@
 __author__ = 'Yang'
 
 import numpy as np
-from numpy import random
 from acrm import ApproxCorankingMatrix
 from sklearn import datasets, manifold
 from scipy.interpolate import griddata
@@ -25,12 +24,12 @@ class Defog(object):
 
     def preprocess(self):
         print("preprocess")
-        self.hd = self._get_hd_data(size=64)[0]
+        self.hd = self._get_hd_data(100)[0]
         self.ld = self._get_ld_data()
         self.acrm = ApproxCorankingMatrix(k=10)
         self.acrm.preprocess(self.hd, self.ld)
 
-        margin = 0.1
+        margin = 0.0
         domain = [
             np.min([np.min(self.ld[:, 0]) - margin, np.max(self.ld[:, 0]) + margin]),
             np.max([np.min(self.ld[:, 1]) - margin, np.max(self.ld[:, 1]) + margin])
@@ -49,17 +48,24 @@ class Defog(object):
             self.seed_values = self._normalize(np.array(self.seed_values))
         return self.seed_values
 
-    def get_grid_data(self, selected=None, recalculate=True):
+    def get_grid_data(self, selected=None, recalculate=True, overview=False, normalize=False):
         print("getting grid data")
         if selected is None:
             selected = np.argmin(self.acrm.evals)
         if recalculate:
-            self.get_seed_values(selected)
-            self.grid_z = griddata(self.seeds, self.seed_values,  # input seeds
-                                   (self.grid_x, self.grid_y),    # output grid
-                                   method='cubic')                # options
+            if overview:
+                print("raw")
+                self.grid_z = griddata(self.ld, self.acrm.evals,      # embeddings as seeds
+                                       (self.grid_x, self.grid_y),    # output grid
+                                       method='linear')               # options
+            else:
+                self.get_seed_values(selected)
+                self.grid_z = griddata(self.seeds, self.seed_values,  # random seeds
+                                       (self.grid_x, self.grid_y),    # output grid
+                                       method='linear')                # options
             self._extrapolate()  # extrapolate nans on edge
-            self._normalize(self.grid_z)
+            if normalize:
+                self.grid_z = self._normalize(self.grid_z)
         return self.grid_z
 
     @staticmethod
@@ -74,7 +80,7 @@ class Defog(object):
     def _get_hd_data(self, size=-1, normalize=True):
         digits = datasets.load_digits(n_class=5)
         if size != -1:  # return sampled
-            samples = random.randint(digits.data.shape[0], size=size)
+            samples = np.random.randint(digits.data.shape[0], size=size)
             data = self._normalize(digits.data[samples]) if normalize else digits.data[samples]
             return data, digits.target[samples], digits.images[samples]
         else:  # return all
@@ -105,6 +111,4 @@ if __name__ == "__main__":
 
     defog = Defog()
     defog.preprocess()
-    data_ = defog.get_grid_data()
-
-    print(data_)
+    print(defog.get_grid_data())

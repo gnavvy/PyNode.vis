@@ -2,6 +2,7 @@ __author__ = 'ywang'
 
 from flask import Flask, render_template, jsonify
 from defog import Defog
+import numpy as np
 
 app = Flask(__name__)
 
@@ -13,9 +14,13 @@ def hello_world():
 
 @app.route('/getData')
 def get_data():
-    return jsonify({'values': defog.get_grid_data().tolist()})
+    data = defog.get_grid_data()
+    print(data)
+    return jsonify({'values': data.tolist()})
 
 if __name__ == '__main__':
+    np.set_printoptions(threshold=np.nan, linewidth=400, precision=2, suppress=False)
+
     defog = Defog()
     defog.preprocess()
     app.run()

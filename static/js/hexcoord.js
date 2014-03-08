@@ -24,23 +24,6 @@ App.ViewModels.HexMapViewModel = Backbone.Model.extend({
         canvas: { 'width': 800, 'height': 800 },
         gridDim: { 'x': 50, 'y': 50 }
     },
-    set: function(key, val, options) {
-        if (!key) {
-            return this;
-        }
-
-        var attrs;
-        if (typeof key === 'object') {  // set multiple attributes
-            attrs = key;
-            options = val;
-        } else {
-            attrs = {};
-            attrs[key] = val;
-        }
-        // globally
-        Backbone.Model.prototype.set.call(this, attrs, options);
-        return this;
-    },
     url: ''
 });
 
@@ -54,10 +37,10 @@ App.Views.CanvasLayer = Backbone.View.extend({
         var canvas = this.model.get('canvas');
         var margin = this.model.get('margin');
 
-        this.model.set('_figure', {
+        this.param.domain = {
             width: canvas.width - margin.left - margin.right,
             height: canvas.height - margin.top - margin.bottom
-        });
+        };
 
         this.layer = {};
         this.layer.container = d3.select(this.el).append('svg:svg')
@@ -72,12 +55,14 @@ App.Views.CanvasLayer = Backbone.View.extend({
 App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
     initCoordinate: function() {
         this.createHexagonSkeleton();
-        var hexbin = this.model.get('_hexagon');
         var centroids = this.calculateCentroids();
+        var self = this;
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
-            .data(hexbin(centroids))
+            .data(this.param.hexagon(centroids))
             .enter().append("path")
-            .attr("d", function(d) { return "M" + d.x + "," + d.y + hexbin.hexagon(); })
+            .attr("d", function(d) {
+                return "M" + d.x + "," + d.y + self.param.hexagon.hexagon();
+            })
             .style("class", "hexagon")
             .style("stroke-width", "0.2px")
             .style("stroke", "#AAA")
@@ -86,15 +71,14 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
     },
     createHexagonSkeleton: function() {
         var gridDim = this.model.get('gridDim');
-        var figureArea = this.model.get('_figure');
-        var xRadius = figureArea.width / ((gridDim.x+0.5) * Math.sqrt(3));
-        var yRadius = figureArea.height / ((gridDim.y+1/3) * 1.5);
+        var xRadius = this.param.domain.width / ((gridDim.x+0.5) * Math.sqrt(3));
+        var yRadius = this.param.domain.height / ((gridDim.y+1/3) * 1.5);
         var radius = d3.min([xRadius, yRadius]);
-        var hexagon = d3.hexbin().radius(radius);
-        this.model.set({ '_hexRadius': radius, '_hexagon': hexagon});
+        this.param.hexagon = d3.hexbin().radius(radius);
+        this.param.hexRadius = radius;
     },
     calculateCentroids: function() {
-        var radius = this.model.get('_hexRadius');
+        var radius = this.param.hexRadius;
         var gridDim = this.model.get('gridDim');
         var centroids = [];  // faster than _.range().map().zip()
         for (var y = 0; y < gridDim.y; ++y) {
@@ -147,7 +131,7 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     },
     getColor: function(idx) {
         var value = this.getValue(idx);
-        return this.model.get('colorScheme')(value);
+        return this.param.colorScheme(value);
     }
 });
 
@@ -182,9 +166,9 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         this.collection.bind('reset', this.render);
         this.collection.fetch({reset: true});
 
-        var color = d3.scale.linear().domain([0.0, 0.5, 1.0])
+        this.param = {};
+        this.param.colorScheme = d3.scale.linear().domain([0.0, 0.5, 1.0])
             .range(["red", 'white', 'green']);
-        this.model.set('colorScheme', color);
     },
     render: function() {
         return this.initCanvas().updateData().drawData().bindInteraction();

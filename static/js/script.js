@@ -8,9 +8,5 @@ $(function() {
         collection: dataSeries
     }).render();
 
-    setInterval(function() {
-        dataSeries.fetch({
-            reset: true
-        });
-    }, 50000);
+    dataSeries.fetch({ reset: true });
 });

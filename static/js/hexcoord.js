@@ -140,12 +140,10 @@ App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
     bindInteraction: function() {
         var mouseover = function() {
             d3.select(this).transition().duration(10)
-                .style("fill", function() { return "#0E0"; })
-                .style("fill-opacity", 0.5);
+                .style("fill-opacity", 0.1);
         };
         var mouseout = function() {
             d3.select(this).transition().duration(500)
-                .style("fill", function() { return "#EEE"; })
                 .style("fill-opacity", 1.0);
         };
         var click = function() {
@@ -154,8 +152,8 @@ App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
                 .style("fill-opacity", 0.5);
         };
         this.layer.hexagons
-//            .on("mouseover", mouseover)
-//            .on("mouseout", mouseout)
+            .on("mouseover", mouseover)
+            .on("mouseout", mouseout)
             .on("click", click);
         return this;
     }
@@ -167,8 +165,8 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
         this.collection.bind('reset', this.render);
         this.collection.fetch({reset: true});
 
-        var color = d3.scale.linear().domain([0.0, 1.0, 100])
-            .range(['orange', 'white']);
+        var color = d3.scale.linear().domain([0.0, 0.5, 1.0])
+            .range(["red", 'white', 'green']);
         this.model.set('colorScheme', color);
     },
     render: function() {

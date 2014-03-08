@@ -19,7 +19,9 @@ class Defog(object):
         self.hd = None
         self.ld = None
         self.n_seeds = n_seeds
-        self.n_grid = 50j
+        self.grid_res = 50
+        self.grid_width = 0
+
         np.random.seed(np.random.randint(10))
 
     def preprocess(self):
@@ -34,10 +36,21 @@ class Defog(object):
             np.min([np.min(self.ld[:, 0]) - margin, np.max(self.ld[:, 0]) + margin]),
             np.max([np.min(self.ld[:, 1]) - margin, np.max(self.ld[:, 1]) + margin])
         ]
+        div = complex(0, self.grid_res)
         self.grid_x, self.grid_y = np.mgrid[
-            domain[0]:domain[1]:self.n_grid, domain[0]:domain[1]:self.n_grid
+            domain[0]:domain[1]:div, domain[0]:domain[1]:div
         ]
+
+        # should have a better way to get the indices
+        self.grid_width = (domain[1] - domain[0]) / abs(self.grid_res)
         self.seeds = np.random.uniform(domain[0], domain[1], (self.n_seeds, 2))
+
+    def get_control_point_indices(self):
+        coord = np.array(self.ld // self.grid_width)
+        index = np.zeros(shape=self.grid_res, dtype=int)
+        for i in range(self.grid_res):
+            index[i] = coord[i][0] + coord[i][1] * self.grid_res
+        return index
 
     def get_seed_values(self, selected=None, recalculate=True):
         print("getting seed data")
@@ -48,7 +61,7 @@ class Defog(object):
             self.seed_values = self._normalize(np.array(self.seed_values))
         return self.seed_values
 
-    def get_grid_data(self, selected=None, recalculate=True, overview=False, normalize=False):
+    def get_grid_data(self, selected=None, recalculate=True, overview=True, normalize=False):
         print("getting grid data")
         if selected is None:
             selected = np.argmin(self.acrm.evals)
@@ -57,12 +70,12 @@ class Defog(object):
                 print("raw")
                 self.grid_z = griddata(self.ld, self.acrm.evals,      # embeddings as seeds
                                        (self.grid_x, self.grid_y),    # output grid
-                                       method='linear')               # options
+                                       method='linear')                # options
             else:
                 self.get_seed_values(selected)
                 self.grid_z = griddata(self.seeds, self.seed_values,  # random seeds
                                        (self.grid_x, self.grid_y),    # output grid
-                                       method='linear')                # options
+                                       method='cubic')                # options
             self._extrapolate()  # extrapolate nans on edge
             if normalize:
                 self.grid_z = self._normalize(self.grid_z)
@@ -111,4 +124,7 @@ if __name__ == "__main__":
 
     defog = Defog()
     defog.preprocess()
-    print(defog.get_grid_data())
+    data = defog.get_grid_data()
+    indices = defog.get_control_point_indices()
+    print(data)
+    print(indices)

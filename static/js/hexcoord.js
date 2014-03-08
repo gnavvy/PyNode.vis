@@ -13,7 +13,7 @@ App.Collections.DataSeries = Backbone.Collection.extend({
     model: App.Models.DataItem,
     url: '/getData',
     parse: function(response) {
-        return response.values;
+        return response.data;
     }
 });
 
@@ -109,6 +109,10 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
 App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     updateData: function() {
         this.data = this.collection.toJSON();
+        if (this.data.length > 0) {
+            this.data.values = this.collection.toJSON()[0]['values'];
+            this.data.indices = this.collection.toJSON()[0]['indices'];
+        }
         return this;
     },
     drawData: function() {  // update
@@ -118,15 +122,28 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         }
         var self = this;
         this.layer.hexagons
-            .style("stroke", function(d,i) { return self.getValue(i) > 0 ? "#AAA" : "#FFF"; })
-            .style("fill", function(d,i) { return self.getColor(i); });
+            .style("stroke", function(d,i) {
+                return self.isLandmark(i) ? "#000" : "#AAA";
+            })
+            .style("stroke-width", function(d,i) {
+                return self.isLandmark(i) ? "2px" : "0.2px";
+            })
+            .style("fill", function(d,i) {
+                return self.getColor(i);
+            });
         return this;
     },
+    isLandmark: function(idx) {
+        return this.data.indices && _(this.data.indices).contains(idx)
+    },
     getValue: function(idx) {
+        if (this.data.values === undefined) {
+            return 0.5;  // set to white by default
+        }
         var gridDim = this.model.get('gridDim');
         var x = idx % gridDim.x;
         var y = (idx-x) / gridDim.x;
-        return this.data.length > 0 ? this.data[y][x] : 0.0;
+        return this.data.values[y][x];
     },
     getColor: function(idx) {
         var value = this.getValue(idx);

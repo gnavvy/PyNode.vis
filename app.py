@@ -14,9 +14,13 @@ def hello_world():
 
 @app.route('/getData')
 def get_data():
+    indices = defog.get_control_point_indices()
     data = defog.get_grid_data()
-    print(data)
-    return jsonify({'values': data.tolist()})
+
+    return jsonify({'data': {
+        'values': data.tolist(),
+        'indices': indices.tolist()
+    }})
 
 if __name__ == '__main__':
     np.set_printoptions(threshold=np.nan, linewidth=400, precision=2, suppress=False)

@@ -8,5 +8,4 @@ $(function() {
         collection: dataSeries
     }).render();
 
-    dataSeries.fetch({ reset: true });
 });

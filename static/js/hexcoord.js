@@ -154,8 +154,8 @@ App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
                 .style("fill-opacity", 0.5);
         };
         this.layer.hexagons
-            .on("mouseover", mouseover)
-            .on("mouseout", mouseout)
+//            .on("mouseover", mouseover)
+//            .on("mouseout", mouseout)
             .on("click", click);
         return this;
     }

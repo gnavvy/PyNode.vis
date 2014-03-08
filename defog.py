@@ -12,9 +12,10 @@ class Defog(object):
     def __init__(self, n_seeds=1000):
         print("init")
         self.seeds = None
-        self.values = None
+        self.seed_values = None
         self.grid_x = None
         self.grid_y = None
+        self.grid_z = None
         self.acrm = None
         self.hd = None
         self.ld = None
@@ -24,9 +25,9 @@ class Defog(object):
 
     def preprocess(self):
         print("preprocess")
-        self.hd = self._get_hd_data()[0]
+        self.hd = self._get_hd_data(size=64)[0]
         self.ld = self._get_ld_data()
-        self.acrm = ApproxCorankingMatrix(k=6)
+        self.acrm = ApproxCorankingMatrix(k=10)
         self.acrm.preprocess(self.hd, self.ld)
 
         margin = 0.1
@@ -39,28 +40,44 @@ class Defog(object):
         ]
         self.seeds = np.random.uniform(domain[0], domain[1], (self.n_seeds, 2))
 
-    def get_data(self, selected=-1):
-        print("getting data")
-        if selected == -1:
+    def get_seed_values(self, selected=None, recalculate=True):
+        print("getting seed data")
+        if selected is None:
             selected = np.argmin(self.acrm.evals)
-        self.values = [self.acrm.update_data_low(selected, s) for s in self.seeds]
-        self.values = self._normalize(np.array(self.values))
-        return griddata(self.seeds, self.values, (self.grid_x, self.grid_y),
-                        fill_value=0, method='cubic')
+        if recalculate:
+            self.seed_values = [self.acrm.update_data_low(selected, s) for s in self.seeds]
+            self.seed_values = self._normalize(np.array(self.seed_values))
+        return self.seed_values
+
+    def get_grid_data(self, selected=None, recalculate=True):
+        print("getting grid data")
+        if selected is None:
+            selected = np.argmin(self.acrm.evals)
+        if recalculate:
+            self.get_seed_values(selected)
+            self.grid_z = griddata(self.seeds, self.seed_values,  # input seeds
+                                   (self.grid_x, self.grid_y),    # output grid
+                                   method='cubic')                # options
+            self._extrapolate()  # extrapolate nans on edge
+            self._normalize(self.grid_z)
+        return self.grid_z
 
     @staticmethod
     def _normalize(data):
-        _min = data.min()
-        _range = data.max() - _min
-        return data if _range == 0 else (data - _min) / _range
+        _min, _max = data.min(), data.max()
+        _range = _max - _min
+        if _range == 0:
+            return data
+        else:
+            return (data - _min) / _range
 
     def _get_hd_data(self, size=-1, normalize=True):
         digits = datasets.load_digits(n_class=5)
-        if size != -1:
+        if size != -1:  # return sampled
             samples = random.randint(digits.data.shape[0], size=size)
             data = self._normalize(digits.data[samples]) if normalize else digits.data[samples]
             return data, digits.target[samples], digits.images[samples]
-        else:
+        else:  # return all
             data = self._normalize(digits.data) if normalize else digits.data
             return data, digits.target, digits.images
 
@@ -70,3 +87,24 @@ class Defog(object):
         if normalize:
             embeddings = self._normalize(embeddings)
         return embeddings
+
+    def _extrapolate(self):
+        # extrapolate the NaNs or masked values in a grid INPLACE using nearest value.
+        if np.ma.is_masked(self.grid_z):
+            nans = self.grid_z
+        else:
+            nans = np.isnan(self.grid_z)
+        notnans = np.logical_not(nans)
+        self.grid_z[nans] = griddata(
+            (self.grid_x[notnans], self.grid_y[notnans]), self.grid_z[notnans],
+            (self.grid_x[nans], self.grid_y[nans]), method='nearest'
+        ).ravel()
+
+if __name__ == "__main__":
+    np.set_printoptions(threshold=np.nan, linewidth=400, precision=2, suppress=False)
+
+    defog = Defog()
+    defog.preprocess()
+    data_ = defog.get_grid_data()
+
+    print(data_)

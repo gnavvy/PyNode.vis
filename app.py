@@ -13,7 +13,7 @@ def hello_world():
 
 @app.route('/getData')
 def get_data():
-    return jsonify({'values': defog.get_data().tolist()})
+    return jsonify({'values': defog.get_grid_data().tolist()})
 
 if __name__ == '__main__':
     defog = Defog()

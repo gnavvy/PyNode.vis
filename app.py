@@ -15,11 +15,15 @@ def hello_world():
 @app.route('/getData')
 def get_data():
     indices = defog.get_control_point_indices()
-    data = defog.get_grid_data()
+    values, selected = defog.get_grid_data()
+
+    print(selected)
+    print(indices)
 
     return jsonify({'data': {
-        'values': data.tolist(),
-        'indices': indices.tolist()
+        'values': values.tolist(),
+        'indices': indices.tolist(),
+        'selected': selected
     }})
 
 if __name__ == '__main__':

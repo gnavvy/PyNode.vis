@@ -55,10 +55,9 @@ App.Views.CanvasLayer = Backbone.View.extend({
 App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
     initCoordinate: function() {
         this.createHexagonSkeleton();
-        var centroids = this.calculateCentroids();
         var self = this;
         this.layer.hexagons = this.layer.figure.append("svg:g").selectAll('.hexagon')
-            .data(this.param.hexagon(centroids))
+            .data(this.param.hexagon(this.param.centroids))
             .enter().append("path")
             .attr("d", function(d) {
                 return "M" + d.x + "," + d.y + self.param.hexagon.hexagon();
@@ -74,19 +73,15 @@ App.Views.CoordinateLayer = App.Views.CanvasLayer.extend({
         var xRadius = this.param.domain.width / ((gridDim.x+0.5) * Math.sqrt(3));
         var yRadius = this.param.domain.height / ((gridDim.y+1/3) * 1.5);
         var radius = d3.min([xRadius, yRadius]);
-        this.param.hexagon = d3.hexbin().radius(radius);
-        this.param.hexRadius = radius;
-    },
-    calculateCentroids: function() {
-        var radius = this.param.hexRadius;
-        var gridDim = this.model.get('gridDim');
         var centroids = [];  // faster than _.range().map().zip()
         for (var y = 0; y < gridDim.y; ++y) {
             for (var x = 0; x < gridDim.x; ++x) {
                 centroids.push([radius * x * 1.749, radius * y * 1.5]);
             }
         }
-        return centroids;
+        this.param.hexRadius = radius;
+        this.param.centroids = centroids;
+        this.param.hexagon = d3.hexbin().radius(radius);
     }
 });
 
@@ -96,6 +91,7 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
         if (this.data.length > 0) {
             this.data.values = this.collection.toJSON()[0]['values'];
             this.data.indices = this.collection.toJSON()[0]['indices'];
+            this.data.selected = this.collection.toJSON()[0]['selected'];
         }
         return this;
     },
@@ -105,20 +101,10 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
             this.initCoordinate();
         }
         var self = this;
-        this.layer.hexagons
-            .style("stroke", function(d,i) {
-                return self.isLandmark(i) ? "#000" : "#AAA";
-            })
-            .style("stroke-width", function(d,i) {
-                return self.isLandmark(i) ? "2px" : "0.2px";
-            })
-            .style("fill", function(d,i) {
-                return self.getColor(i);
-            });
+        this.layer.hexagons.style("fill", function(d,i) {
+            return self.getColor(i);
+        });
         return this;
-    },
-    isLandmark: function(idx) {
-        return this.data.indices && _(this.data.indices).contains(idx)
     },
     getValue: function(idx) {
         if (this.data.values === undefined) {
@@ -135,7 +121,43 @@ App.Views.DataLayer = App.Views.CoordinateLayer.extend({
     }
 });
 
-App.Views.AnnotationLayer = App.Views.DataLayer.extend({});
+App.Views.AnnotationLayer = App.Views.DataLayer.extend({
+    annotate: function() {
+        if (!this.data.indices || !this.param.centroids) {
+            return this;
+        }
+
+        var landmarkCentroids = [];
+        for (var i = 0; i < this.data.indices.length; ++i) {
+            var idx = this.data.indices[i];
+            if (this.param.centroids[idx]) {
+                landmarkCentroids.push(this.param.centroids[idx]);
+            }
+        }
+
+        var self = this;
+        this.layer.landmarks = this.layer.figure.append("svg:g").selectAll('.hexagon')
+            .data(this.param.hexagon(landmarkCentroids))
+            .enter().append("path")
+            .attr("d", function(d) {
+                return "M" + d.x + "," + d.y + self.param.hexagon.hexagon();
+            })
+            .style("class", "hexagon")
+            .style("stroke-width", "2px")
+            .style("stroke", function(d, i) {
+                return self.isSelected(i) ? "F00" : "000";
+            })
+            .style("fill", "transparent")
+        ;
+        return this;
+    },
+    isLandmark: function(idx) {
+        return this.data.indices && _(this.data.indices).contains(idx)
+    },
+    isSelected: function(idx) {
+        return this.data.selected && this.data.selected === idx
+    }
+});
 
 App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
     bindInteraction: function() {
@@ -152,7 +174,7 @@ App.Views.InteractionLayer = App.Views.AnnotationLayer.extend({
                 .style("fill", function() { return "#F00"; })
                 .style("fill-opacity", 0.5);
         };
-        this.layer.hexagons
+        this.layer.landmarks
             .on("mouseover", mouseover)
             .on("mouseout", mouseout)
             .on("click", click);
@@ -171,6 +193,9 @@ App.Views.HexMapView = App.Views.InteractionLayer.extend({
             .range(["red", 'white', 'green']);
     },
     render: function() {
-        return this.initCanvas().updateData().drawData().bindInteraction();
+        return this.initCanvas()
+            .updateData().drawData()
+            .annotate()
+            .bindInteraction();
     }
 });

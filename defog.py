@@ -26,7 +26,7 @@ class Defog(object):
 
     def preprocess(self):
         print("preprocess")
-        self.hd = self._get_hd_data(100)[0]
+        self.hd = self._get_hd_data(64)[0]
         self.ld = self._get_ld_data()
         self.acrm = ApproxCorankingMatrix(k=10)
         self.acrm.preprocess(self.hd, self.ld)
@@ -79,7 +79,7 @@ class Defog(object):
             self._extrapolate()  # extrapolate nans on edge
             if normalize:
                 self.grid_z = self._normalize(self.grid_z)
-        return self.grid_z
+        return self.grid_z, selected
 
     @staticmethod
     def _normalize(data):
@@ -101,7 +101,7 @@ class Defog(object):
             return data, digits.target, digits.images
 
     def _get_ld_data(self, normalize=True):
-        mds = manifold.MDS(n_components=2, n_init=1, max_iter=100)
+        mds = manifold.MDS(n_components=2, n_init=1, max_iter=1000)
         embeddings = mds.fit_transform(self.hd)
         if normalize:
             embeddings = self._normalize(embeddings)
@@ -124,7 +124,8 @@ if __name__ == "__main__":
 
     defog = Defog()
     defog.preprocess()
-    data = defog.get_grid_data()
+    values, selected = defog.get_grid_data()
     indices = defog.get_control_point_indices()
-    print(data)
+    print(values)
+    print(selected)
     print(indices)

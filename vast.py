@@ -54,14 +54,15 @@ class Defog(object):
         self.seeds[3][0], self.seeds[3][1] = self.domain[1], self.domain[1]
 
     def get_seed_values(self, recalculate=True):
-        # print("getting seed data")
-        print("selected: ", np.argmin(self.acrm.evals))
         if self.selected is None:
             self.selected = np.argmin(self.acrm.evals)
 
         if recalculate:
+            selected_backup = self.ld[self.selected]  # backup current pos for selected point
             self.seed_values = [self.acrm.update_data_low(self.selected, s) for s in self.seeds]
             self.seed_values = self._normalize(np.array(self.seed_values))
+            self.acrm.update_data_low(self.selected, selected_backup)  # restore backup
+
         return self.seed_values
 
     @staticmethod
@@ -118,71 +119,48 @@ class Vast():
         self.fig, self.ax = pyplot.subplots(figsize=(9, 8))
         self.fig.canvas.mpl_connect('pick_event', self.onpick)
 
-        self.points = None
-        self.target = None
-        self.texts = None
-        self.heatmap = None
-        self.contour = None
-
-        # self.cmap_fg = pyplot.cm.get_cmap('gray')
-        # self.cmap_bg = pyplot.cm.get_cmap('GnBu_r')
-
         self.defog = Defog()
         self.defog.preprocess()
 
-        self.ld = None
-
     def onpick(self, event):
-        # self.target.remove()
-        # self.points.remove()
-        # self.fig.clf()
-        # self.fig, self.ax = pyplot.subplots(figsize=(8, 8))
         self.defog.selected = event.ind[0]
-
-        # x, y = self.ld[self.defog.selected, 0], self.ld[self.defog.selected, 1]
-        # self.target = self.ax.scatter(x, y, c='r', marker='o', alpha=0.8, s=600, linewidths=0)
-        # self.points = self.ax.scatter(self.ld[:, 0], self.ld[:, 1], c=self.defog.acrm.evals,
-        #                               s=300, marker='o', cmap=self.cmap_fg, norm=self.cmap_fg,
-        #                               picker=True)
-        # self.fig.canvas.draw()
         self.redraw()
 
-    def redraw(self):
+    def redraw(self, recalc=True):
         self.ax.clear()
-        self.ld = self.defog.ld.copy()  # defog.ld will be changed
+        ld = self.defog.ld.copy()  # defog.ld will be changed
 
         X = self.defog.seeds[:, 0]
         Y = self.defog.seeds[:, 1]
-        Z = self.defog.get_seed_values()
+        Z = self.defog.get_seed_values(recalculate=recalc)
 
-        self.defog.ld = self.ld
+        self.defog.ld = ld  # restore defog.ld
 
         min_, max_ = Z.min(), Z.max()
         range_ = max_ - min_
         scale_ = 0.25
 
         norm_fg = pyplot.Normalize(vmin=0.0, vmax=max_ * 0.8)
-        norm_bg = pyplot.Normalize(vmin=min_ - scale_ * range_,
-                                   vmax=max_ - scale_ * range_)
+        norm_bg = pyplot.Normalize(vmin=min_ - scale_ * range_, vmax=max_ - scale_ * range_)
+
         cmap_fg = pyplot.cm.get_cmap('gray')
         cmap_bg = pyplot.cm.get_cmap('GnBu_r')
 
         self.ax.set_xlim(self.defog.domain)
         self.ax.set_ylim(self.defog.domain)
 
-        self.contour = self.ax.tricontour(X, Y, Z, 10, linewidths=0.2, colors='k')
-        self.heatmap = self.ax.tricontourf(X, Y, Z, 100, cmap=cmap_bg, norm=norm_bg)
-        # self.fig.colorbar(self.heatmap, ticks=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
+        contour = self.ax.tricontour(X, Y, Z, 10, linewidths=0.2, colors='k')
+        heatmap = self.ax.tricontourf(X, Y, Z, 100, cmap=cmap_bg, norm=norm_bg)
+        # self.fig.colorbar(heatmap, ticks=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
-        x, y = self.ld[self.defog.selected]
-        self.target = self.ax.scatter(x, y, c='r', marker='o', alpha=0.8, s=600, linewidths=0)
-        self.points = self.ax.scatter(self.ld[:, 0], self.ld[:, 1], c=self.defog.acrm.evals,
-                                      s=300, marker='o', cmap=cmap_fg, norm=norm_fg, picker=True)
+        x, y = ld[self.defog.selected]
+        target = self.ax.scatter(x, y, c='r', marker='o', alpha=0.8, s=600, linewidths=0)
+        points = self.ax.scatter(ld[:, 0], ld[:, 1], c=self.defog.acrm.evals, s=300,
+                                 marker='o', cmap=cmap_fg, norm=norm_fg, picker=True)
 
-        for i in range(self.ld.shape[0]):
+        for i in range(ld.shape[0]):
             c = 'k' if self.defog.acrm.evals[i] > 0.3 else 'w'
-            self.ax.text(self.ld[i, 0] - .01, self.ld[i, 1] - .01,
-                         str(self.defog.labels[i]), color=c)
+            self.ax.text(ld[i, 0] - .01, ld[i, 1] - .01, str(self.defog.labels[i]), color=c)
 
         self.fig.canvas.draw()
 

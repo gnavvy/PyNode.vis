@@ -127,6 +127,8 @@ App.Views.AnnotationLayer = App.Views.DataLayer.extend({
             return this;
         }
 
+        var self = this;
+
         var landmarkCentroids = [];
         for (var i = 0; i < this.data.indices.length; ++i) {
             var idx = this.data.indices[i];
@@ -134,21 +136,29 @@ App.Views.AnnotationLayer = App.Views.DataLayer.extend({
                 landmarkCentroids.push(this.param.centroids[idx]);
             }
         }
-
-        var self = this;
-        this.layer.landmarks = this.layer.figure.append("svg:g").selectAll('.hexagon')
+        this.layer.landmarks = this.layer.figure.append("svg:g").selectAll('.landmarks')
             .data(this.param.hexagon(landmarkCentroids))
             .enter().append("path")
             .attr("d", function(d) {
                 return "M" + d.x + "," + d.y + self.param.hexagon.hexagon();
             })
             .style("class", "hexagon")
-            .style("stroke-width", "2px")
-            .style("stroke", function(d, i) {
-                return self.isSelected(i) ? "F00" : "000";
-            })
-            .style("fill", "transparent")
-        ;
+            .style("stroke-width", "1.5px")
+            .style("stroke", "#333")
+            .style("fill", "transparent");
+
+//        var temp = [this.param.centroids[this.data.selected]];
+//        this.layer.selected = this.layer.figure.append("svg:g").selectAll(".selected")
+//            .data(this.param.hexagon(temp))
+//            .enter().append("path")
+//            .attr("d", function(d) {
+//                return "M" + d.x + "," + d.y + self.param.hexagon.hexagon();
+//            })
+//            .style("class", "hexagon")
+//            .style("stroke-width", "2px")
+//            .style("stroke", "F00")
+//            .style("fill", "transparent");
+
         return this;
     },
     isLandmark: function(idx) {

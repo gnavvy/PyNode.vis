@@ -15,7 +15,12 @@ def hello_world():
 @app.route('/getData')
 def get_data():
     indices = defog.get_control_point_indices()
-    values, selected = defog.get_grid_data()
+    values, selected = defog.get_grid_data(
+        selected=None,
+        recalculate=True,
+        overview=True,
+        normalize=False
+    )
 
     print(selected)
     print(indices)

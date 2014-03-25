@@ -1,10 +1,13 @@
 __author__ = 'Yang'
 
+import copy
 import numpy as np
+import math
 from acrm import ApproxCorankingMatrix
 from sklearn import (manifold, datasets, decomposition, ensemble, lda, random_projection)
 from scipy.interpolate import griddata
-
+from scipy.stats import distributions
+from collections import Counter
 from matplotlib import pyplot
 
 
@@ -36,7 +39,7 @@ class Defog(object):
         self.ld = self._get_ld_data(init_condition=self.ld)
 
         # calcualte quality
-        self.acrm = ApproxCorankingMatrix(k=10)
+        self.acrm = ApproxCorankingMatrix(k=15)
         self.acrm.preprocess(self.hd, self.ld)
 
         # generate seed for interpolation
@@ -55,7 +58,7 @@ class Defog(object):
 
     def get_seed_values(self, recalculate=True):
         if self.selected is None:
-            self.selected = np.argmin(self.acrm.evals)
+            self.selected = np.argmin(self.acrm.quality)
 
         if recalculate:
             selected_backup = self.ld[self.selected]  # backup current pos for selected point
@@ -115,24 +118,27 @@ class Defog(object):
 
 class Vast():
 
-    def __init__(self):
-        self.fig, self.ax = pyplot.subplots(figsize=(9, 8))
+    def __init__(self, defog):
+        self.fig, self.ax = pyplot.subplots(figsize=(8.5, 8))
         self.fig.canvas.mpl_connect('pick_event', self.onpick)
-
-        self.defog = Defog()
+        self.defog = defog
         self.defog.preprocess()
+        self.redraw()
+
+    # def update(self):
+    #     self.defog.preprocess()
 
     def onpick(self, event):
         self.defog.selected = event.ind[0]
         self.redraw()
 
-    def redraw(self, recalc=True):
+    def redraw(self):
         self.ax.clear()
         ld = self.defog.ld.copy()  # defog.ld will be changed
 
         X = self.defog.seeds[:, 0]
         Y = self.defog.seeds[:, 1]
-        Z = self.defog.get_seed_values(recalculate=recalc)
+        Z = self.defog.get_seed_values()
 
         self.defog.ld = ld  # restore defog.ld
 
@@ -149,18 +155,18 @@ class Vast():
         self.ax.set_xlim(self.defog.domain)
         self.ax.set_ylim(self.defog.domain)
 
-        contour = self.ax.tricontour(X, Y, Z, 10, linewidths=0.2, colors='k')
+        contour = self.ax.tricontour(X, Y, Z, 8, linewidths=0.2, colors='k')
         heatmap = self.ax.tricontourf(X, Y, Z, 100, cmap=cmap_bg, norm=norm_bg)
         # self.fig.colorbar(heatmap, ticks=[0.0, 0.2, 0.4, 0.6, 0.8, 1.0])
 
-        x, y = ld[self.defog.selected]
-        target = self.ax.scatter(x, y, c='r', marker='o', alpha=0.8, s=600, linewidths=0)
-        points = self.ax.scatter(ld[:, 0], ld[:, 1], c=self.defog.acrm.evals, s=300,
+        target = self.ax.scatter(ld[self.defog.selected, 0], ld[self.defog.selected, 1],
+                                 c='r', marker='o', alpha=0.8, s=600, linewidths=0)
+        points = self.ax.scatter(ld[:, 0], ld[:, 1], c=self.defog.acrm.quality, s=300,
                                  marker='o', cmap=cmap_fg, norm=norm_fg, picker=True)
 
         for i in range(ld.shape[0]):
-            c = 'k' if self.defog.acrm.evals[i] > 0.3 else 'w'
-            self.ax.text(ld[i, 0] - .01, ld[i, 1] - .01, str(self.defog.labels[i]), color=c)
+            c = 'k' if self.defog.acrm.quality[i] > 0.3 else 'w'
+            self.ax.text(ld[i, 0] - .009, ld[i, 1] - .009, str(self.defog.labels[i]), color=c)
 
         self.fig.canvas.draw()
 
@@ -170,7 +176,7 @@ class Vast():
 
 if __name__ == "__main__":
     np.set_printoptions(threshold=np.nan, linewidth=400, precision=2, suppress=False)
+    defog = Defog(n_seeds=1000)
 
-    vast = Vast()
-    vast.redraw()
+    vast = Vast(defog)
     pyplot.show()

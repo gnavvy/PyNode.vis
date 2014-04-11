@@ -7,10 +7,6 @@
     </head>
 
     <body>
-        <div class="header">
-            Hexagonal Coordinate
-            <div class="subtitle">Heatmaps (not yet) showing uncertainty distributions</div>
-        </div>
         <div id="vis"></div>
 
         <!-- Libraries -->
@@ -18,11 +14,13 @@
         <script src="{{url_for('static', filename='js/lib/jquery-ui.min.js')}}"></script>
         <script src="{{url_for('static', filename='js/lib/underscore-min.js')}}"></script>
         <script src="{{url_for('static', filename='js/lib/backbone-min.js')}}"></script>
+        <script src="{{url_for('static', filename='js/lib/three.min.js')}}"></script>
+        <!--
         <script src="{{url_for('static', filename='js/lib/d3.v3.min.js')}}"></script>
         <script src="{{url_for('static', filename='js/lib/d3.hexbin.v0.min.js')}}"></script>
-
+        -->
         <!-- Scripts -->
-        <script src="{{url_for('static', filename='js/hexcoord.js')}}"></script>
+        <script src="{{url_for('static', filename='js/umap.js')}}"></script>
         <script src="{{url_for('static', filename='js/script.js')}}"></script>
     </body>
 </html>
